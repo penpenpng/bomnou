@@ -290,7 +290,6 @@ const ASSETS = {
   },
   sound: {
     "BellSE": bse,
-    "PonSE": pse,
   }
 };
 

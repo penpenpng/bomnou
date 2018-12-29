@@ -1,1 +1,1 @@
-web: python -u -O serverlogic/kick.py --port=$PORT
+web: python -u -O logic/kick.py --port=$PORT
