@@ -77,7 +77,6 @@ function defineScenes() {
     superClass: "DisplayScene",
     init (options) {
       this.superInit(options);
-      game = new Game(this);
 
       Sprite("bg.png", SCREEN_WIDTH, SCREEN_HEIGHT)
         .addChildTo(this)
@@ -87,6 +86,9 @@ function defineScenes() {
         .addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(14));
       
+      game = new Game(this);
+      SoundManager.playMusic("neorock70.mp3");
+
       this.setInteractive(true);
       this.on("pointstart", this.ontouch);
     },
