@@ -86,6 +86,16 @@ function defineScenes() {
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(12))
         .on("push", () => this.exit("ResultScene"));
+      
+      OfferingBox()
+        .addChildTo(this)
+        .setPosition(this.gridX.center(), this.gridY.span(14));
+      
+      this.setInteractive(true);
+      this.on("pointstart", this.ontouch);
+    },
+    ontouch(e) {
+      game.summon_boar(this, e.pointer.x, e.pointer.y);
     },
     update() {
       game.update_objects(this);
@@ -115,41 +125,125 @@ function defineScenes() {
 }
 
 function defineObjects() {
-  phina.define("Man", {
+  phina.define("TargetObject", {
     superClass: "Sprite",
     init() {
-      this.superInit("man.png", 100, 100);
+      this.superInit(random_choice([
+        "man.png",
+        "old_man.png",
+        "running_man.png",
+        "woman.png",
+        "old_woman.png",
+        "running_woman.png",
+      ]), 100, 100);
       this.setInteractive(true);
       this.on("pointstart", this.ontouch);
       
       this.motion = []
+      this.is_destroyed = false;
     },
     ontouch() {
-      if (!game.is_fully_charged()) this.knockback();
+      if (!game.is_fully_charged()) {
+        console.log("knockback");
+        this.motion.push(["knockback", FPS * 0.1, 0]);
+      }
     },
     update() {
       let vx = 0;
       let vy = 1;
 
       if (this.motion.length > 0) {
-        let [motion, t] = this.motion.pop();
+        let [motion, end, t] = this.motion.pop();
 
         if (motion == "knockback") {
           vx = 0;
           vy = -5;
         }
         
-        if (t-- > 0) this.motion.push([motion, t]);
+        if (t++ < end) this.motion.push([motion, end, t]);
       }
       
       this.x += vx;
       this.y += vy;
     },
-    knockback() {
-      console.log("knockback");
-      this.motion.push(["knockback", FPS * 0.1]);
+    destory() {
+      this.remove();
+      this.is_destroyed = true;
     }
   });
+
+  phina.define("Boar", {
+    superClass: "Sprite",
+    init(x, y) {
+      this.superInit("boar.png", 100, 100);
+      this.direction = random_choice([
+        "up",
+        "right",
+        "left",
+      ]);
+
+      if (this.direction == "up") {
+        this.setPosition(x, SCREEN_HEIGHT);
+      } else if (this.direction == "right") {
+        this.setPosition(0, y);
+        this.scaleX *= -1;
+      } else if (this.direction == "left") {
+        this.setPosition(SCREEN_WIDTH, y);
+      }
+    },
+    update() {
+      const speed = 3
+      if (this.direction == "up") {
+        this.y -= speed;
+      } else if (this.direction == "right") {
+        this.x += speed;
+      } else if (this.direction == "left") {
+        this.x -= speed;
+      }
+
+      for (let o of game.objects) {
+        if (this.hitTestElement(o)) {
+          o.destory();
+        }
+      }
+
+      if (this.y < 0 || this.x < 0 || SCREEN_WIDTH < this.x) {
+        this.remove();
+      }
+    },
+  });
+
+
+  phina.define("OfferingBox", {
+    superClass: "Sprite",
+    init() {
+      this.superInit("offering_box.png", 100, 100);
+      this.setInteractive(true);
+      this.on("pointstart", this.ontouch);
+      
+      this.motion = []
+    },
+    ontouch(e) {
+      console.log(e);
+      if (!game.is_fully_charged()) {
+        game.charge();
+        this.motion.push(["pop", FPS * 0.2, 0]);
+      }
+    },
+    update() {
+      if (this.motion.length > 0) {
+        let [motion, end, t] = this.motion.pop();
+
+        if (motion == "pop") {
+          // TODO: this.setScale(x, y);
+        }
+        
+        if (t++ > end) this.motion.push([motion, end, t]);
+      }
+    },
+  });
+
+  // TODO: gage, inoshishi
 }
 
 class Game {
@@ -161,8 +255,9 @@ class Game {
     this.score = 0;
     this.objects = [];
     this.ability = null;
-    this.spwan_timer = 0;
+    this.spawn_timer = 0;
     this.spawn_span = FPS * 2;
+    this.boar_CD = 0;
   }
   update_objects(scene) {
     {
@@ -170,14 +265,14 @@ class Game {
 
       // delete destroyed objects
       for (let o of this.objects) {
-        if (!this.objects.is_destroyed) updated.push(o);
+        if (!o.is_destroyed) updated.push(o);
       }
 
       // spwan an object
-      this.spwan_timer--;
-      if (this.spwan_timer < 0) {
-        this.spwan_timer = this.spwan_span;
-        let o = Man().addChildTo(scene)
+      this.spawn_timer--;
+      if (this.spawn_timer < 0) {
+        this.spawn_timer = this.spawn_span;
+        let o = TargetObject().addChildTo(scene)
           .setPosition(scene.gridX.center(), scene.gridY.center());
         updated.push(o);
       }      
@@ -186,6 +281,9 @@ class Game {
     }
     {
       // TOOD: update spawn span
+    }
+    {
+      if (!this.can_summon_boar()) this.boar_CD--;
     }
   }
   is_over() {
@@ -215,12 +313,26 @@ class Game {
 
     // TODO: ability
   }
+  summon_boar(scene, x, y) {
+    if (this.can_summon_boar()) {
+      Boar(x, y).addChildTo(scene);
+      this.boar_CD = FPS * 0.5;
+    };
+  }
+  can_summon_boar() {
+    return this.boar_CD <= 0;
+  }
 }
 
 main();
 
 
 // utils_________________________________________________
+
+
+function random_range(s, e) {
+  return Math.random() * Math.abs(e - s) + Math.min(s, e);
+}
 
 function random_choice(array) {
   if (array.length <= 0) {
