@@ -50,9 +50,16 @@ function defineScenes() {
       this.superInit(options);
   
       Label({
-        text: "初詣チャレンジ！"
+        text: "初詣チャレンジ！",
+        fontSize: 70,
+      }).addChildTo(this)
+        .setPosition(this.gridX.center(), this.gridY.span(3));
+      
+      Label({
+        text: "初詣に行きたい！\nでも人混みは嫌いだ！\n\nライバルを全員蹴散らして\nキミだけの初詣を掴み取れ！！"
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(7));
+        
       
       Button({
         text: "はじめる"
@@ -64,7 +71,7 @@ function defineScenes() {
         });
     },
   });
-  
+
   phina.define("GameScene", {
     superClass: "DisplayScene",
     init (options) {
@@ -142,7 +149,7 @@ function defineScenes() {
         width: 250,
       }).addChildTo(this)
         .setPosition(this.gridX.span(4), this.gridY.span(12))
-        .on("push", () => this.exit("StartScene"));
+        .on("push", () => this.exit("GameScene"));
       
       Button({
         text: "Tweet"
