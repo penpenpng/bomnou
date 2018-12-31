@@ -63,12 +63,6 @@ function defineScenes() {
           this.exit("GameScene")
         });
     },
-    update () {
-      
-      // for Debug
-      this.exit("GameScene");
-
-    }
   });
   
   phina.define("GameScene", {
@@ -183,6 +177,7 @@ function defineObjects() {
       
       this.motion = []
       this.is_destroyed = false;
+      this.speed = random_range(5, 10);
     },
     ontouch() {
       if (!game.can_use_ability() && !this.is_destroyed) {
@@ -193,7 +188,7 @@ function defineObjects() {
     },
     update() {
       let vx = 0;
-      let vy = 5;
+      let vy = this.speed * (1 + game.elapsed_frames / (FPS * 60 * 3));
 
       if (this.motion.length > 0) {
         let motion = this.motion.pop();
@@ -367,6 +362,7 @@ class Motion {
 
 class Game {
   constructor(layer) {
+    this.elapsed_frames = 0;
     this.layer = layer;
     this.gage = 0;
     this.score = 0;
@@ -399,11 +395,12 @@ class Game {
       this.objects = updated;
     }
     {
-      // TOOD: update spawn span
+      this.spawn_span = (FPS * 10 - this.elapsed_frames) / 5;
     }
     {
       if (!this.can_summon_boar()) this.boar_CD_timer--;
     }
+    this.elapsed_frames++;
   }
   is_over() {
     for (let o of this.objects) {
@@ -429,11 +426,11 @@ class Game {
     if (!this.can_use_ability()) return;
 
     if (this.ability == "gong") {
+      play_se("gong.mp3", 0.8);
       for (let o of this.objects) {
         o.destroy("vanish");
         game.score += ENV.GONG_SCORE;
         game.kill++;
-        play_se("gong.mp3", 0.8);
       }
     }
 
@@ -457,8 +454,8 @@ const ENV = {
   BOAR_CD: 0.5 * FPS,
   BOAR_SPEED: 450 / FPS,
   BOAR_SCORE: 50,
-  CHARGE_SCORE: 50,
-  GONG_SCORE: 10,
+  CHARGE_SCORE: 5,
+  GONG_SCORE: 3,
 }
 
 main();
