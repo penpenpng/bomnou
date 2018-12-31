@@ -331,7 +331,7 @@ function defineObjects() {
         .setPosition(-(SCREEN_WIDTH - 100 + 14) / 2, 0);  // XXX
     },
     update() {
-      this.gage.width = game.gage / 10 * (SCREEN_WIDTH - 100 - 2);  // XXX
+      this.gage.width = game.gage * (SCREEN_WIDTH - 100 - 2);  // XXX
       this.gage.fill = game.can_use_ability() ? "gold" : "skyblue";
     },
   });
@@ -410,8 +410,11 @@ class Game {
   }
   charge() {
     this.score += ENV.CHARGE_SCORE;
-    if (!this.can_use_ability()) this.gage++;
+    if (!this.can_use_ability()) {
+      this.gage += random_range(0.05, 0.15) / (game.elapsed_frames / 300 + 1);
+    }
     if (this.can_use_ability()) {
+      this.gage = 1;
       this.ability = random_choice([
         // "blackhole",
         "gong",
@@ -420,7 +423,7 @@ class Game {
     }
   }
   can_use_ability() {
-    return this.gage >= 10;
+    return this.gage >= 1;
   }
   use_ability() {
     if (!this.can_use_ability()) return;
