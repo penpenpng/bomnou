@@ -85,7 +85,11 @@ function defineScenes() {
       
       OfferingBox()
         .addChildTo(this.game_layer)
-        .setPosition(this.gridX.center(), this.gridY.span(14));
+        .setPosition(this.gridX.center(), this.gridY.span(13));
+      
+      Gage()
+        .addChildTo(this.ui_layer)
+        .setPosition(this.gridX.center(), this.gridY.span(15));
       
       this.score_display = Label({
         text: "",
@@ -264,7 +268,6 @@ function defineObjects() {
     },
   });
 
-
   phina.define("OfferingBox", {
     superClass: "Sprite",
     init() {
@@ -295,7 +298,32 @@ function defineObjects() {
     },
   });
 
-  // TODO: gage, inoshishi
+  phina.define("Gage", {
+    superClass: "DisplayElement",
+    init() {
+      this.superInit();
+
+      this.frame = RectangleShape({
+        height: 20,
+        width: SCREEN_WIDTH - 100,
+        strokeWidth: 4,
+        stroke: "black",
+        fill: "transparent",
+        backgroundColor: "white",
+      }).addChildTo(this)
+      this.gage = RectangleShape({
+        height: 15,
+        originX: 0,
+        strokeWidth: 0,
+        fill: "skyblue",
+      }).addChildTo(this.frame)
+        .setPosition(-(SCREEN_WIDTH - 100 + 14) / 2, 0);  // XXX
+    },
+    update() {
+      this.gage.width = game.gage / 10 * (SCREEN_WIDTH - 100 - 2);  // XXX
+      this.gage.fill = game.can_use_ability() ? "gold" : "skyblue";
+    },
+  });
 }
 
 class Motion {
