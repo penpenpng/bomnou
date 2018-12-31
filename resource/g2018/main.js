@@ -76,19 +76,22 @@ function defineScenes() {
     init (options) {
       this.superInit(options);
 
-      this.game_layer = DisplayElement().addChildTo(this);
-      this.ui_layer = DisplayElement().addChildTo(this);
+      this.layer = {
+        game: DisplayElement().addChildTo(this),
+        ui: DisplayElement().addChildTo(this),
+        bg: DisplayElement().addChildTo(this),
+      }
 
       Sprite("bg.png", SCREEN_WIDTH, SCREEN_HEIGHT)
-        .addChildTo(this.game_layer)
+        .addChildTo(this.layer.game)
         .setPosition(this.gridX.center(), this.gridY.center());
       
       OfferingBox()
-        .addChildTo(this.game_layer)
+        .addChildTo(this.layer.game)
         .setPosition(this.gridX.center(), this.gridY.span(13));
       
       Gage()
-        .addChildTo(this.ui_layer)
+        .addChildTo(this.layer.ui)
         .setPosition(this.gridX.center(), this.gridY.span(15));
       
       this.score_display = Label({
@@ -99,18 +102,25 @@ function defineScenes() {
         y: 30,
         backgroundColor: "white",
         fill: "black",
-      }).addChildTo(this.ui_layer);
+      }).addChildTo(this.layer.ui);
       
-      game = new Game(this.game_layer);
+      game = new Game(this.layer);
       SoundManager.playMusic("neorock70.mp3");
 
       this.setInteractive(true);
       this.on("pointstart", this.ontouch);
     },
     ontouch(e) {
-      game.summon_boar(e.pointer.x, e.pointer.y);
+      if (game.fired) return;
+      if (game.can_summon_boar()) {
+        game.summon_boar(e.pointer.x, e.pointer.y);
+      }
+      if (game.can_use_ability()) {
+        game.use_ability();
+      }
     },
     update() {
+      game.fired = false;
       game.update_objects();
       this.score_display.text = `Score: ${game.score}`;
       if (game.is_over()) {
@@ -176,6 +186,7 @@ function defineObjects() {
     },
     ontouch() {
       if (!game.can_use_ability() && !this.is_destroyed) {
+        game.fired = true;
         this.motion.push(new Motion("knockback"));
         play_se("punch.mp3", 0.8);
       }
@@ -197,6 +208,11 @@ function defineObjects() {
           let k = t * 1.5;
           this.setScale(k, k);
           this.alpha = 1 - t;
+        }
+        if (motion.type == "vanish") {
+          let t = motion.norm_t();
+          vy = -3;
+          this.alpha = (1 - t) * 0.8;
         }
         if (motion.type == "knockback") {
           vx = 0;
@@ -278,8 +294,8 @@ function defineObjects() {
       this.motion = []
     },
     ontouch(e) {
-      console.log(e);
       if (!game.can_use_ability()) {
+        game.fired = true;
         game.charge();
         play_se("coin.mp3", 2);
         this.motion.push(["pop", FPS * 0.2, 0]);
@@ -330,10 +346,11 @@ class Motion {
   constructor(type) {
     this.type = type;
     this.t = 0;
-    this.is_destruction = type == "explosion";
+    this.is_destruction = type == "explosion" || type == "vanish";
     this.lifetime = FPS * function () {
       if (type == "knockback") return 0.2;
       if (type == "explosion") return 1;
+      if (type == "vanish") return 1.5;
       return 1;
     }();
   }
@@ -349,8 +366,8 @@ class Motion {
 }
 
 class Game {
-  constructor(game_layer) {
-    this.game_layer = game_layer;
+  constructor(layer) {
+    this.layer = layer;
     this.gage = 0;
     this.score = 0;
     this.kill = 0;
@@ -359,6 +376,7 @@ class Game {
     this.spawn_timer = 0;
     this.spawn_span = FPS * 2;
     this.boar_CD_timer = 0;
+    this.fired = false;
   }
   update_objects() {
     {
@@ -373,7 +391,7 @@ class Game {
       this.spawn_timer--;
       if (this.spawn_timer < 0) {
         this.spawn_timer = this.spawn_span;
-        let o = TargetObject().addChildTo(this.game_layer)
+        let o = TargetObject().addChildTo(this.layer.game)
           .setPosition(random_range(100, SCREEN_WIDTH - 100), -100);
         updated.push(o);
       }      
@@ -398,9 +416,9 @@ class Game {
     if (!this.can_use_ability()) this.gage++;
     if (this.can_use_ability()) {
       this.ability = random_choice([
-        "blackhole",
+        // "blackhole",
         "gong",
-        "beam",
+        // "beam",
       ]);
     }
   }
@@ -409,15 +427,22 @@ class Game {
   }
   use_ability() {
     if (!this.can_use_ability()) return;
-    
+
+    if (this.ability == "gong") {
+      for (let o of this.objects) {
+        o.destroy("vanish");
+        game.score += ENV.GONG_SCORE;
+        game.kill++;
+        play_se("gong.mp3", 0.8);
+      }
+    }
+
     this.gage = 0;
     this.ability = null;
-
-    // TODO: ability
   }
   summon_boar(x, y) {
     if (this.can_summon_boar() && !this.can_use_ability()) {
-      Boar(x, y).addChildTo(this.game_layer);
+      Boar(x, y).addChildTo(this.layer.game);
       this.boar_CD_timer = ENV.BOAR_CD
     };
   }
@@ -433,6 +458,7 @@ const ENV = {
   BOAR_SPEED: 450 / FPS,
   BOAR_SCORE: 50,
   CHARGE_SCORE: 50,
+  GONG_SCORE: 10,
 }
 
 main();
