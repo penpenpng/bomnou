@@ -59,7 +59,7 @@ function defineScenes() {
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(12))
         .on("push", () => {
-          SoundManager.play("gong.mp3");
+          play_se("gong.mp3", 0.8);
           this.exit("GameScene")
         });
     },
@@ -173,7 +173,7 @@ function defineObjects() {
     ontouch() {
       if (!game.can_use_ability() && !this.is_destroyed) {
         this.motion.push(new Motion("knockback"));
-        SoundManager.play("punch.mp3");
+        play_se("punch.mp3", 0.8);
       }
     },
     update() {
@@ -254,7 +254,7 @@ function defineObjects() {
           o.destroy("explosion");
           game.score += ENV.BOAR_SCORE;
           game.kill++;
-          SoundManager.play("explosion.mp3");
+          play_se("explosion.mp3", 0.8);
         }
       }
 
@@ -278,6 +278,7 @@ function defineObjects() {
       console.log(e);
       if (!game.can_use_ability()) {
         game.charge();
+        play_se("coin.mp3", 2);
         this.motion.push(["pop", FPS * 0.2, 0]);
       }
     },
@@ -421,4 +422,11 @@ function random_choice(array) {
     return null;
   }
   return array[Math.floor(Math.random() * array.length)];
+}
+
+function play_se(name, volume) {
+  let default_volume = SoundManager.getVolume();
+  SoundManager.setVolume(volume);
+  SoundManager.play(name);
+  SoundManager.setVolume(default_volume);
 }
