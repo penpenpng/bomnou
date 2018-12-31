@@ -126,10 +126,21 @@ function defineScenes() {
         .setPosition(this.gridX.center(), this.gridY.span(7));
       
       Button({
-        text: "End"
+        text: "Retry"
       }).addChildTo(this)
-        .setPosition(this.gridX.center(), this.gridY.span(12))
+        .setPosition(this.gridX.span(4), this.gridY.span(12))
         .on("push", () => this.exit("StartScene"));
+      
+      Button({
+        text: "Tweet"
+      }).addChildTo(this)
+        .setPosition(this.gridX.span(12), this.gridY.span(12))
+        .on("click", () => {
+          window.open("about:blanck").location.href = phina.social.Twitter.createURL({
+            text: `てすとついーと`,
+            hashtags: ["てすと"],
+          });
+        });
       
       SoundManager.stopMusic();
     }
