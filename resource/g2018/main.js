@@ -19,7 +19,6 @@ function game_setup(assets) {
 
   defineScenes();
   defineObjects();
-  game = new Game();
 
   phina.main(function () {
     GameApp({
@@ -58,10 +57,13 @@ function defineScenes() {
         .setPosition(this.gridX.center(), this.gridY.span(7));
       
       Button({
-        text: "Retry"
+        text: "Start"
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(12))
-        .on("push", () => this.exit("GameScene"));
+        .on("push", () => {
+          SoundManager.play("gong.mp3");
+          this.exit("GameScene")
+        });
     },
     update () {
       
@@ -75,6 +77,11 @@ function defineScenes() {
     superClass: "DisplayScene",
     init (options) {
       this.superInit(options);
+      game = new Game(this);
+
+      Sprite("bg.png", SCREEN_WIDTH, SCREEN_HEIGHT)
+        .addChildTo(this)
+        .setPosition(this.gridX.center(), this.gridY.center());
       
       OfferingBox()
         .addChildTo(this)
@@ -84,10 +91,10 @@ function defineScenes() {
       this.on("pointstart", this.ontouch);
     },
     ontouch(e) {
-      game.summon_boar(this, e.pointer.x, e.pointer.y);
+      game.summon_boar(e.pointer.x, e.pointer.y);
     },
     update() {
-      game.update_objects(this);
+      game.update_objects();
       if (game.is_over()) {
         this.exit("ResultScene");
       }
@@ -124,7 +131,7 @@ function defineObjects() {
         "woman.png",
         "old_woman.png",
         "running_woman.png",
-      ]), 100, 100);
+      ]), 90, 135);
       this.setInteractive(true);
       this.on("pointstart", this.ontouch);
       
@@ -132,32 +139,52 @@ function defineObjects() {
       this.is_destroyed = false;
     },
     ontouch() {
-      if (!game.can_use_ability()) {
-        console.log("knockback");
-        this.motion.push(["knockback", FPS * 0.1, 0]);
+      if (!game.can_use_ability() && !this.is_destroyed) {
+        this.motion.push(new Motion("knockback"));
       }
     },
     update() {
       let vx = 0;
-      let vy = 1;
+      let vy = 5;
 
       if (this.motion.length > 0) {
-        let [motion, end, t] = this.motion.pop();
+        let motion = this.motion.pop();
+        motion.tick();
 
-        if (motion == "knockback") {
+        if (motion.is_destruction) {
           vx = 0;
-          vy = -5;
+          vy = 0;
+        }
+        if (motion.type == "explosion") {
+          let t = motion.norm_t();
+          let k = t * 1.5;
+          this.setScale(k, k);
+          this.alpha = 1 - t;
+        }
+        if (motion.type == "knockback") {
+          vx = 0;
+          vy = -15;
         }
         
-        if (t++ < end) this.motion.push([motion, end, t]);
+        if (!motion.is_over()) {
+          this.motion.push(motion);
+        }
+        if (motion.is_over() && motion.is_destruction) {
+          this.remove();
+          return;
+        }
       }
       
       this.x += vx;
       this.y += vy;
     },
-    destory() {
-      this.remove();
+    destory(effect) {
       this.is_destroyed = true;
+      this.motion.push(new Motion(effect));
+      if (effect == "explosion") {
+        this.setImage("explosion.png", 100, 100)
+          .setScale(0, 0);
+      }
     }
   });
 
@@ -181,7 +208,7 @@ function defineObjects() {
       }
     },
     update() {
-      const speed = 3
+      const speed = 15;
       if (this.direction == "up") {
         this.y -= speed;
       } else if (this.direction == "right") {
@@ -192,7 +219,8 @@ function defineObjects() {
 
       for (let o of game.objects) {
         if (this.hitTestElement(o)) {
-          o.destory();
+          o.destory("explosion");
+          SoundManager.play("explosion.mp3");
         }
       }
 
@@ -235,11 +263,31 @@ function defineObjects() {
   // TODO: gage, inoshishi
 }
 
-class Game {
-  constructor() {
-    this.init();
+class Motion {
+  constructor(type) {
+    this.type = type;
+    this.t = 0;
+    this.is_destruction = type == "explosion";
+    this.lifetime = FPS * function () {
+      if (type == "knockback") return 0.2;
+      if (type == "explosion") return 1;
+      return 1;
+    }();
   }
-  init() {
+  is_over() {
+    return this.t > this.lifetime;
+  }
+  tick() {
+    this.t++;
+  }
+  norm_t() {
+    return this.t / this.lifetime;
+  }
+}
+
+class Game {
+  constructor(scene) {
+    this.scene = scene;
     this.gage = 0;
     this.score = 0;
     this.objects = [];
@@ -248,7 +296,7 @@ class Game {
     this.spawn_span = FPS * 2;
     this.boar_CD = 0;
   }
-  update_objects(scene) {
+  update_objects() {
     {
       let updated = [];
 
@@ -261,7 +309,7 @@ class Game {
       this.spawn_timer--;
       if (this.spawn_timer < 0) {
         this.spawn_timer = this.spawn_span;
-        let o = TargetObject().addChildTo(scene)
+        let o = TargetObject().addChildTo(this.scene)
           .setPosition(random_range(100, SCREEN_WIDTH - 100), -100);
         updated.push(o);
       }      
@@ -302,9 +350,9 @@ class Game {
 
     // TODO: ability
   }
-  summon_boar(scene, x, y) {
+  summon_boar(x, y) {
     if (this.can_summon_boar() && !this.can_use_ability()) {
-      Boar(x, y).addChildTo(scene);
+      Boar(x, y).addChildTo(this.scene);
       this.boar_CD = FPS * 0.5;
     };
   }

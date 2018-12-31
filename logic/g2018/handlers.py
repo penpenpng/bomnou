@@ -13,6 +13,7 @@ class AssetsListHandler(tornado.web.RequestHandler):
     def get(self):
         self.write(json.dumps({
             "image": self._get_assets_of("img"),
+            "sound": self._get_assets_of("mp3"),
         }))
 
     def _get_assets_of(self, asset_type):
