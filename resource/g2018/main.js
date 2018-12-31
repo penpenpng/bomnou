@@ -50,12 +50,12 @@ function defineScenes() {
       this.superInit(options);
   
       Label({
-        text: "Hoge Title"
+        text: "初詣チャレンジ！"
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(7));
       
       Button({
-        text: "Start"
+        text: "はじめる"
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(12))
         .on("push", () => {
@@ -88,7 +88,7 @@ function defineScenes() {
         .setPosition(this.gridX.center(), this.gridY.span(14));
       
       this.score_display = Label({
-        text: "Score: 0",
+        text: "",
         originX: 0,
         originY: 0,
         x: 30,
@@ -120,13 +120,18 @@ function defineScenes() {
     init (options) {
       this.superInit(options);
   
+      Sprite("gasho.png", 200, 150)
+        .addChildTo(this)
+        .setPosition(this.gridX.center(), this.gridY.span(3));
+      
       Label({
-        text: "ResultScene"
+        text: `貴方は${game.kill}人なぎ倒して\n${game.score}点を獲得しました！`,
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(7));
       
       Button({
-        text: "Retry"
+        text: "もういっかい！",
+        width: 250,
       }).addChildTo(this)
         .setPosition(this.gridX.span(4), this.gridY.span(12))
         .on("push", () => this.exit("StartScene"));
@@ -137,8 +142,8 @@ function defineScenes() {
         .setPosition(this.gridX.span(12), this.gridY.span(12))
         .on("click", () => {
           window.open("about:blanck").location.href = phina.social.Twitter.createURL({
-            text: `てすとついーと`,
-            hashtags: ["てすと"],
+            text: `私は${game.kill}人の参拝客をなぎ倒して${game.score}点を獲得しました！`,
+            hashtags: ["はつもうでチャレンジ"],
           });
         });
       
@@ -247,6 +252,7 @@ function defineObjects() {
         if (this.hitTestElement(o)) {
           o.destroy("explosion");
           game.score += ENV.BOAR_SCORE;
+          game.kill++;
           SoundManager.play("explosion.mp3");
         }
       }
@@ -317,6 +323,7 @@ class Game {
     this.game_layer = game_layer;
     this.gage = 0;
     this.score = 0;
+    this.kill = 0;
     this.objects = [];
     this.ability = null;
     this.spawn_timer = 0;
