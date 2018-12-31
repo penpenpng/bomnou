@@ -143,7 +143,7 @@ function defineScenes() {
         .on("click", () => {
           window.open("about:blanck").location.href = phina.social.Twitter.createURL({
             text: `私は${game.kill}人の参拝客をなぎ倒して${game.score}点を獲得しました！`,
-            hashtags: ["はつもうでチャレンジ"],
+            hashtags: ["初詣チャレンジ"],
           });
         });
       
@@ -173,6 +173,7 @@ function defineObjects() {
     ontouch() {
       if (!game.can_use_ability() && !this.is_destroyed) {
         this.motion.push(new Motion("knockback"));
+        SoundManager.play("punch.mp3");
       }
     },
     update() {
