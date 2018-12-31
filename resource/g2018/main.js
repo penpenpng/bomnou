@@ -75,17 +75,6 @@ function defineScenes() {
     superClass: "DisplayScene",
     init (options) {
       this.superInit(options);
-  
-      Label({
-        text: "GameScene"
-      }).addChildTo(this)
-        .setPosition(this.gridX.center(), this.gridY.span(7));
-      
-      Button({
-        text: "Clear"
-      }).addChildTo(this)
-        .setPosition(this.gridX.center(), this.gridY.span(12))
-        .on("push", () => this.exit("ResultScene"));
       
       OfferingBox()
         .addChildTo(this)
@@ -143,7 +132,7 @@ function defineObjects() {
       this.is_destroyed = false;
     },
     ontouch() {
-      if (!game.is_fully_charged()) {
+      if (!game.can_use_ability()) {
         console.log("knockback");
         this.motion.push(["knockback", FPS * 0.1, 0]);
       }
@@ -225,7 +214,7 @@ function defineObjects() {
     },
     ontouch(e) {
       console.log(e);
-      if (!game.is_fully_charged()) {
+      if (!game.can_use_ability()) {
         game.charge();
         this.motion.push(["pop", FPS * 0.2, 0]);
       }
@@ -273,7 +262,7 @@ class Game {
       if (this.spawn_timer < 0) {
         this.spawn_timer = this.spawn_span;
         let o = TargetObject().addChildTo(scene)
-          .setPosition(scene.gridX.center(), scene.gridY.center());
+          .setPosition(random_range(100, SCREEN_WIDTH - 100), -100);
         updated.push(o);
       }      
 
@@ -293,8 +282,8 @@ class Game {
     return false;
   }
   charge() {
-    if (!this.is_fully_charged()) this.gage++;
-    if (this.is_fully_charged()) {
+    if (!this.can_use_ability()) this.gage++;
+    if (this.can_use_ability()) {
       this.ability = random_choice([
         "blackhole",
         "gong",
@@ -302,11 +291,11 @@ class Game {
       ]);
     }
   }
-  is_fully_charged() {
+  can_use_ability() {
     return this.gage >= 10;
   }
   use_ability() {
-    if (!this.is_fully_charged()) return;
+    if (!this.can_use_ability()) return;
     
     this.gage = 0;
     this.ability = null;
@@ -314,7 +303,7 @@ class Game {
     // TODO: ability
   }
   summon_boar(scene, x, y) {
-    if (this.can_summon_boar()) {
+    if (this.can_summon_boar() && !this.can_use_ability()) {
       Boar(x, y).addChildTo(scene);
       this.boar_CD = FPS * 0.5;
     };
@@ -328,7 +317,6 @@ main();
 
 
 // utils_________________________________________________
-
 
 function random_range(s, e) {
   return Math.random() * Math.abs(e - s) + Math.min(s, e);
