@@ -56,7 +56,7 @@ function defineScenes() {
         .setPosition(this.gridX.center(), this.gridY.span(3));
       
       Label({
-        text: "初詣に行きたい！\nでも人混みは嫌いだ！\n\nライバルを全員蹴散らして\nキミだけの初詣を掴み取れ！！"
+        text: "初詣に行きたい！\nでも人混みは嫌いだ！\n\nライバルを全員蹴散らして\nキミだけの初詣を掴み取れ！！\n\n(※PC版は音が鳴ります)"
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(7));
         
