@@ -1,5 +1,3 @@
-const [SCREEN_WIDTH, SCREEN_HEIGHT] = [640, 960];
-const FPS = 30;  // XXX
 
 function main() {
   let req = new XMLHttpRequest();
@@ -78,15 +76,28 @@ function defineScenes() {
     init (options) {
       this.superInit(options);
 
+      this.game_layer = DisplayElement().addChildTo(this);
+      this.ui_layer = DisplayElement().addChildTo(this);
+
       Sprite("bg.png", SCREEN_WIDTH, SCREEN_HEIGHT)
-        .addChildTo(this)
+        .addChildTo(this.game_layer)
         .setPosition(this.gridX.center(), this.gridY.center());
       
       OfferingBox()
-        .addChildTo(this)
+        .addChildTo(this.game_layer)
         .setPosition(this.gridX.center(), this.gridY.span(14));
       
-      game = new Game(this);
+      this.score_display = Label({
+        text: "Score: 0",
+        originX: 0,
+        originY: 0,
+        x: 30,
+        y: 30,
+        backgroundColor: "white",
+        fill: "black",
+      }).addChildTo(this.ui_layer);
+      
+      game = new Game(this.game_layer);
       SoundManager.playMusic("neorock70.mp3");
 
       this.setInteractive(true);
@@ -97,6 +108,7 @@ function defineScenes() {
     },
     update() {
       game.update_objects();
+      this.score_display.text = `Score: ${game.score}`;
       if (game.is_over()) {
         this.exit("ResultScene");
       }
@@ -118,6 +130,8 @@ function defineScenes() {
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(12))
         .on("push", () => this.exit("StartScene"));
+      
+      SoundManager.stopMusic();
     }
   });
 }
@@ -180,7 +194,7 @@ function defineObjects() {
       this.x += vx;
       this.y += vy;
     },
-    destory(effect) {
+    destroy(effect) {
       this.is_destroyed = true;
       this.motion.push(new Motion(effect));
       if (effect == "explosion") {
@@ -210,18 +224,18 @@ function defineObjects() {
       }
     },
     update() {
-      const speed = 15;
       if (this.direction == "up") {
-        this.y -= speed;
+        this.y -= ENV.BOAR_SPEED;
       } else if (this.direction == "right") {
-        this.x += speed;
+        this.x += ENV.BOAR_SPEED;
       } else if (this.direction == "left") {
-        this.x -= speed;
+        this.x -= ENV.BOAR_SPEED;
       }
 
       for (let o of game.objects) {
         if (this.hitTestElement(o)) {
-          o.destory("explosion");
+          o.destroy("explosion");
+          game.score += ENV.BOAR_SCORE;
           SoundManager.play("explosion.mp3");
         }
       }
@@ -288,15 +302,15 @@ class Motion {
 }
 
 class Game {
-  constructor(scene) {
-    this.scene = scene;
+  constructor(game_layer) {
+    this.game_layer = game_layer;
     this.gage = 0;
     this.score = 0;
     this.objects = [];
     this.ability = null;
     this.spawn_timer = 0;
     this.spawn_span = FPS * 2;
-    this.boar_CD = 0;
+    this.boar_CD_timer = 0;
   }
   update_objects() {
     {
@@ -311,7 +325,7 @@ class Game {
       this.spawn_timer--;
       if (this.spawn_timer < 0) {
         this.spawn_timer = this.spawn_span;
-        let o = TargetObject().addChildTo(this.scene)
+        let o = TargetObject().addChildTo(this.game_layer)
           .setPosition(random_range(100, SCREEN_WIDTH - 100), -100);
         updated.push(o);
       }      
@@ -322,7 +336,7 @@ class Game {
       // TOOD: update spawn span
     }
     {
-      if (!this.can_summon_boar()) this.boar_CD--;
+      if (!this.can_summon_boar()) this.boar_CD_timer--;
     }
   }
   is_over() {
@@ -332,6 +346,7 @@ class Game {
     return false;
   }
   charge() {
+    this.score += ENV.CHARGE_SCORE;
     if (!this.can_use_ability()) this.gage++;
     if (this.can_use_ability()) {
       this.ability = random_choice([
@@ -354,13 +369,22 @@ class Game {
   }
   summon_boar(x, y) {
     if (this.can_summon_boar() && !this.can_use_ability()) {
-      Boar(x, y).addChildTo(this.scene);
-      this.boar_CD = FPS * 0.5;
+      Boar(x, y).addChildTo(this.game_layer);
+      this.boar_CD_timer = ENV.BOAR_CD
     };
   }
   can_summon_boar() {
-    return this.boar_CD <= 0;
+    return this.boar_CD_timer <= 0;
   }
+}
+
+const [SCREEN_WIDTH, SCREEN_HEIGHT] = [640, 960];
+const FPS = 30;  // XXX
+const ENV = {
+  BOAR_CD: 0.5 * FPS,
+  BOAR_SPEED: 450 / FPS,
+  BOAR_SCORE: 50,
+  CHARGE_SCORE: 50,
 }
 
 main();
