@@ -18,7 +18,7 @@ function game_setup(assets) {
   defineScenes();
   defineObjects();
 
-  phina.main(function () {
+  phina.main(() => {
     GameApp({
       width: SCREEN_WIDTH,
       height: SCREEN_HEIGHT,
@@ -48,19 +48,18 @@ function defineScenes() {
     superClass: "DisplayScene",
     init (options) {
       this.superInit(options);
-  
+
       Label({
         text: "初詣チャレンジ！",
         fontSize: 70,
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(3));
-      
+
       Label({
         text: "初詣に行きたい！\nでも人混みは嫌いだ！\n\nライバルを全員蹴散らして\nキミだけの初詣を掴み取れ！！\n\n(※PC版は音が鳴ります)"
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(7));
-        
-      
+
       Button({
         text: "はじめる"
       }).addChildTo(this)
@@ -74,27 +73,27 @@ function defineScenes() {
 
   phina.define("GameScene", {
     superClass: "DisplayScene",
-    init (options) {
+    init(options) {
       this.superInit(options);
 
       this.layer = {
+        bg: DisplayElement().addChildTo(this),
         game: DisplayElement().addChildTo(this),
         ui: DisplayElement().addChildTo(this),
-        bg: DisplayElement().addChildTo(this),
       }
 
       Sprite("bg.png", SCREEN_WIDTH, SCREEN_HEIGHT)
         .addChildTo(this.layer.game)
         .setPosition(this.gridX.center(), this.gridY.center());
-      
+
       OfferingBox()
         .addChildTo(this.layer.game)
         .setPosition(this.gridX.center(), this.gridY.span(13));
-      
+
       Gage()
         .addChildTo(this.layer.ui)
         .setPosition(this.gridX.center(), this.gridY.span(15));
-      
+
       this.score_display = Label({
         text: "",
         originX: 0,
@@ -104,7 +103,7 @@ function defineScenes() {
         backgroundColor: "white",
         fill: "black",
       }).addChildTo(this.layer.ui);
-      
+
       game = new Game(this.layer);
       SoundManager.playMusic("neorock70.mp3");
 
@@ -124,44 +123,45 @@ function defineScenes() {
       game.fired = false;
       game.update_objects();
       this.score_display.text = `Score: ${game.score}`;
-      if (game.is_over()) {
-        this.exit("ResultScene");
-      }
+      if (game.is_over()) this.exit("ResultScene");
     }
   });
-  
+
   phina.define("ResultScene", {
     superClass: "DisplayScene",
     init (options) {
       this.superInit(options);
-  
+
+      let kill = game.kill;
+      let score = game.score;
+
       Sprite("gasho.png", 200, 150)
         .addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(3));
-      
+
       Label({
-        text: `貴方は${game.kill}人なぎ倒して\n${game.score}点を獲得しました！`,
+        text: `貴方は${kill}人なぎ倒して\n${score}点を獲得しました！`,
       }).addChildTo(this)
         .setPosition(this.gridX.center(), this.gridY.span(7));
-      
+
       Button({
         text: "もういっかい！",
         width: 250,
       }).addChildTo(this)
         .setPosition(this.gridX.span(4), this.gridY.span(12))
         .on("push", () => this.exit("GameScene"));
-      
+
       Button({
         text: "Tweet"
       }).addChildTo(this)
         .setPosition(this.gridX.span(12), this.gridY.span(12))
         .on("click", () => {
           window.open("about:blanck").location.href = phina.social.Twitter.createURL({
-            text: `私は${game.kill}人の参拝客をなぎ倒して${game.score}点を獲得しました！`,
+            text: `私は${kill}人の参拝客をなぎ倒して${score}点を獲得しました！`,
             hashtags: ["初詣チャレンジ"],
           });
         });
-      
+
       SoundManager.stopMusic();
     }
   });
@@ -181,7 +181,7 @@ function defineObjects() {
       ]), 90, 135);
       this.setInteractive(true);
       this.on("pointstart", this.ontouch);
-      
+
       this.motion = []
       this.is_destroyed = false;
       this.speed = random_range(5, 10);
@@ -220,7 +220,7 @@ function defineObjects() {
           vx = 0;
           vy = -15;
         }
-        
+
         if (!motion.is_over()) {
           this.motion.push(motion);
         }
@@ -229,7 +229,7 @@ function defineObjects() {
           return;
         }
       }
-      
+
       this.x += vx;
       this.y += vy;
     },
@@ -292,7 +292,7 @@ function defineObjects() {
       this.superInit("offering_box.png", 100, 100);
       this.setInteractive(true);
       this.on("pointstart", this.ontouch);
-      
+
       this.motion = []
     },
     ontouch(e) {
@@ -310,7 +310,7 @@ function defineObjects() {
         if (motion == "pop") {
           // TODO: this.setScale(x, y);
         }
-        
+
         if (t++ > end) this.motion.push([motion, end, t]);
       }
     },
@@ -321,7 +321,7 @@ function defineObjects() {
     init() {
       this.superInit();
 
-      this.frame = RectangleShape({
+      let frame = RectangleShape({
         height: 20,
         width: SCREEN_WIDTH - 100,
         strokeWidth: 4,
@@ -334,7 +334,7 @@ function defineObjects() {
         originX: 0,
         strokeWidth: 0,
         fill: "skyblue",
-      }).addChildTo(this.frame)
+      }).addChildTo(frame)
         .setPosition(-(SCREEN_WIDTH - 100 + 14) / 2, 0);  // XXX
     },
     update() {
@@ -382,7 +382,7 @@ class Game {
     this.fired = false;
   }
   update_objects() {
-    {
+    { // update this.objects
       let updated = [];
 
       // delete destroyed objects
@@ -397,7 +397,7 @@ class Game {
         let o = TargetObject().addChildTo(this.layer.game)
           .setPosition(random_range(100, SCREEN_WIDTH - 100), -100);
         updated.push(o);
-      }      
+      }
 
       this.objects = updated;
     }
@@ -410,9 +410,7 @@ class Game {
     this.elapsed_frames++;
   }
   is_over() {
-    for (let o of this.objects) {
-      if (SCREEN_HEIGHT < o.y) return true;
-    }
+    for (let o of this.objects) if (SCREEN_HEIGHT < o.y) return true;
     return false;
   }
   charge() {
