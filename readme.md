@@ -10,3 +10,8 @@
 [https://bomnou.herokuapp.com/g2018](https://bomnou.herokuapp.com/g2018)
 
 2018年の大晦日に作ったゲーム。参拝客を追い払って一人静かな初詣を実現しましょう。
+
+## g2019『ねずみ作り』
+[https://bomnou.herokuapp.com/g2019](https://bomnou.herokuapp.com/g2019)
+
+2019年の大晦日に作ったゲーム。2020年のためのネズミが足りないので、余ったイノシシを使ってネズミを作りましょう。
