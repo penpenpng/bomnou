@@ -248,7 +248,7 @@ function definePhinaScenes() {
                 .setPosition(this.gridX.center(), this.gridY.span(3));
 
             Label({
-                text: `貴方は昨年余ったイノシシから\n${mouses}匹のネズミを合成し\n${score}点を獲得しました！`,
+                text: `貴方はイノシシから\n${mouses}匹のネズミを合成し\n${score}点を獲得しました！`,
             })
                 .addChildTo(this)
                 .setPosition(this.gridX.center(), this.gridY.span(7));
@@ -267,8 +267,16 @@ function definePhinaScenes() {
                 .addChildTo(this)
                 .setPosition(this.gridX.span(12), this.gridY.span(12))
                 .on("click", () => {
+                    const date = new Date();
+                    let message;
+                    if (date.getFullYear() >= 2020) {
+                        message = `あけましておめでとうございます！私は昨年余ったイノシシから${mouses}匹のネズミを合成して${score}点を獲得しました！`;
+                    } else {
+                        message = `私は今年余ったイノシシから来年のためのネズミを${mouses}匹合成して${score}点を獲得しました！良いお年を！`;
+                    }
+
                     window.open("about:blanck").location.href = phina.social.Twitter.createURL({
-                        text: `あけましておめでとうございます！私は昨年余ったイノシシから${mouses}匹のネズミを合成して${score}点を獲得しました！`,
+                        text: message,
                         hashtags: ["ねずみ作り2020"],
                     });
                 });
