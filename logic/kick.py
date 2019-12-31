@@ -3,6 +3,7 @@ from tornado.options import define
 import server
 import g2017
 import g2018
+import g2019
 
 
 define(
@@ -24,4 +25,5 @@ DEBUG = tornado.options.options.debug
 server.start([
     *g2017.handlers,
     *g2018.handlers,
+    *g2019.handlers,
 ], debug=DEBUG)
